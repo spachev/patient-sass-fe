@@ -37,19 +37,17 @@ def commit_changes():
 
 #Takes a db_session, a str representing which table to use and the request as a Dict and creates serveral useful variables
 #Like the final dictionary for db operation
-def convert_json(db_session,content):
-    myTableName = content.get("table")
-    operation = content.get("operation")
-    data = content.get("data")
-    myTable = getattr(model, myTableName)
+def convert_json(db_session, table, op, content):
+    data = content
+    myTable = getattr(model, table)
     myFields = [i for i in myTable.__dict__.keys() if i[:1] != '_']
     fieldValues = [data.get(field) for field in myFields]
-    if operation == "update": #If it is an updated we dont neeed all fields
+    if op == "update": #If it is an updated we dont neeed all fields
         myFields = data.keys()
         fieldValues = [data.get(field) for field in myFields ]
         if "last_update_datetime" in myFields: #creates datetime
             fieldValues[myFields.index("last_update_datetime")] = datetime.datetime.utcnow()
-    elif operation == "insert":
+    elif op == "insert":
         if "create_datetime" in myFields:
             fieldValues[myFields.index("create_datetime")] = datetime.datetime.utcnow() #inserts created datetime
     for index, field in enumerate(fieldValues):
@@ -58,4 +56,4 @@ def convert_json(db_session,content):
     myDict = {}
     for i, fieldName in enumerate(myFields): #creates the final dictionary of values
         myDict[fieldName] = fieldValues[i]
-    return myDict,myTable,operation
+    return myDict,myTable

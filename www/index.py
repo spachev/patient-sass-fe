@@ -1,5 +1,5 @@
 # Infrastructure test page.
-import os
+import os,sys
 import random
 from flask import Flask
 from flask import request
@@ -19,6 +19,38 @@ def mk_error(msg, code):
 
 def mk_rsp(rsp_o, code=200):
     return make_response(jsonify(rsp_o), code)
+
+def handle_record_post(table, op):
+    try:
+        content = request.get_json()
+        myDict,myTable = dbhelper.convert_json(db,table, op, content)
+    except:
+        # TODO: do not assume that exception happened due to malformed request,
+        # differentiate among exceptions
+        return mk_error("Malformed request", 400)
+
+    id = None
+    try:
+        if op == "insert":
+            db_o = dbhelper.add_instance(myTable,**myDict)
+            id = db_o.id
+        elif op == "update":
+            dbhelper.update_instance(model = myTable,**myDict)
+        else:
+            return mk_error("Unknown operation", 400)
+    except sqlalchemy.exc.IntegrityError as e:
+        return mk_error("Record already exists", 409)
+    return mk_rsp({"msg": "Operation Successful" , "id" : id}, 201)
+
+def handle_record_get(table, id):
+    try:
+        # TODO - fetch_instance should be fixed to exclude hidden columns, like password hash
+        return make_response(dbhelper.fetch_instance(table, id).to_json(), 200)
+    except Exception as e:
+        # TODO: do not assume that exception happened due to malformed request,
+        # differentiate among exceptions
+        sys.stderr.write("Exception {}".format(e))
+        return mk_error("Malformed request", 400)
 
 app = create_app()
 
@@ -50,46 +82,13 @@ def test():
     # Return the page with the result.
     return render_template('db-test.html', rows=rows)
 
-# TODO: figure out access control
-# Some tables can be accessed without authentication, but for others
-# authentication is required. When authentication is required, remember
-# the credentials in HTTP session. Also for production, the server should be
-# HTTPS
+# TODO: GET /patient needs to require ADMIN login, but we do not have ADMIN setup yet
+@app.route("/patient/<id>",methods=["GET"])
+def handle_patient_get(id):
+    return handle_record_get("Patient", id)
 
-@app.route("/record/<table>/<id>",methods=["GET"])
-def handle_record_get(**kwargs):
-    try:
-        id = request.view_args['id']
-        table = request.view_args['table']
-        # TODO - fetch_instance should be fixed to exclude hidden columns, like password hash
-        return make_response(dbhelper.fetch_instance(table, id).to_json(), 200)
-    except Exception as e:
-        # TODO: do not assume that exception happened due to malformed request,
-        # differentiate among exceptions
-        return mk_error("Malformed request", 400)
-
-@app.route("/record",methods=["POST"])
-def handle_record_post():
-    try:
-        content = request.get_json()
-        myDict,myTable,operation = dbhelper.convert_json(db,content)
-    except:
-        # TODO: do not assume that exception happened due to malformed request,
-        # differentiate among exceptions
-        return mk_error("Malformed request", 400)
-
-    id = None
-    try:
-        if operation == "insert":
-            db_o = dbhelper.add_instance(myTable,**myDict)
-            id = db_o.id
-        elif operation == "update":
-            dbhelper.update_instance(model = myTable,**myDict)
-        else:
-            return mk_error("Unknown operation", 400)
-    except sqlalchemy.exc.IntegrityError as e:
-        return mk_error("Record already exists", 409)
-    return mk_rsp({"msg": "Operation Successful" , "id" : id}, 201)
-
+@app.route("/patient/<method>",methods=["POST"])
+def handle_patient_post(method):
+    return handle_record_post("Patient", method)
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80 ,debug=True)
+    app.run(host="0.0.0.0", port=80 ,debug=False)

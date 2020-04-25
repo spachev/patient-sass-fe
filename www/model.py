@@ -1,12 +1,17 @@
 import flask_sqlalchemy
-import json
+import json,sys,datetime
 
 db = flask_sqlalchemy.SQLAlchemy()
+
+def var_to_json_type(v):
+    if isinstance(v, datetime.datetime):
+        return str(v)
+    return v
 
 class BaseModel(db.Model):
   __abstract__ = True
   def to_json(self):
-    return json.dumps({c.name: getattr(self, c.name) for c in self.__table__.columns})
+    return json.dumps({c.name: var_to_json_type(getattr(self, c.name)) for c in self.__table__.columns})
 
 
 class User(BaseModel):
@@ -42,7 +47,7 @@ class Patient(BaseModel):
     name = db.Column(db.String(128), unique=False, nullable=False)
     email = db.Column(db.String(128), index=True, unique=True)
     mobile_number = db.Column(db.String(25))
-    postal_address = db.Column(db.Integer)
+    postal_address = db.Column(db.String(50))
     create_datetime = db.Column(db.DateTime)
     tenant_id = db.Column(db.BigInteger)
     def __repr__(self):
