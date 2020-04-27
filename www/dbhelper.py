@@ -19,9 +19,9 @@ def delete_instance(model_cl, id):
     commit_changes()
 
 
-def update_instance(model_cl, idin, **kwargs):
-    instance = model_cl(**kwargs)
-    model_cl.query.filter_by(id=idin).update(instance)
+def update_instance(model_cl, **kwargs):
+    idin = kwargs.pop("id")
+    db.session.query(model_cl).filter_by(id=idin).update(dict(kwargs))
     commit_changes()
 
 

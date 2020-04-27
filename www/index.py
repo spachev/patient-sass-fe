@@ -35,7 +35,7 @@ def handle_record_post(table, op):
             db_o = dbhelper.add_instance(myTable,**myDict)
             id = db_o.id
         elif op == "update":
-            dbhelper.update_instance(model = myTable,**myDict)
+            dbhelper.update_instance(myTable,**myDict)
         else:
             return mk_error("Unknown operation", 400)
     except sqlalchemy.exc.IntegrityError as e:
@@ -64,13 +64,13 @@ def test_vue():
 @app.route("/test_db")
 def test_db():
     n = random.randint(0, 10000)
-    str = f'abc{n}'
-    p = model.Patient(name=str)
+    in_str = f'abc{n}'
+    p = model.Patient(name=in_str)
     db.session.add(p)
     db.session.commit()
     for p in model.Patient.query.all():
-        str += p.__repr__() + "<br />"
-    result = Markup(f'<span style="color: green;">Init DB<br />{str}</span>')
+        in_str += p.__repr__() + " id:" + str(p.id) + "nome:" + str(p.name)+ "<br />"
+    result = Markup(f'<span style="color: green;">Init DB<br />{in_str}</span>')
     return render_template('test-patient.html', result=result)
 
 @app.route("/")
