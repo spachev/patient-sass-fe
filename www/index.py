@@ -36,6 +36,9 @@ def handle_record_post(table, op):
             id = db_o.id
         elif op == "update":
             dbhelper.update_instance(myTable,**myDict)
+        elif op == "delete":
+            myId = myDict.get("id")
+            dbhelper.delete_instance(myTable,myId)
         else:
             return mk_error("Unknown operation", 400)
     except sqlalchemy.exc.IntegrityError as e:

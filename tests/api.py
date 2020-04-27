@@ -36,10 +36,15 @@ class APITester(unittest.TestCase):
     #updating a record
     data2 = {"mobile_number": "123224323", "id" : 1}
     rsp = self.send_json("/patient/update", data2)
-    print(rsp.json())
     self.assertTrue(rsp.status_code == 201, "Bad status response code: {}".format(rsp.status_code))
     rsp_o = rsp.json()
-    print(rsp_o)
+    self.assertTrue(rsp_o["msg"] == 'Operation Successful', "Got unexpected msg in response {}".format(rsp_o["msg"]))
+
+    #deleting a record
+    data3 = {"id": id}
+    rsp = self.send_json("/patient/delete", data3)
+    self.assertTrue(rsp.status_code == 201, "Bad status response code: {}".format(rsp.status_code))
+    rsp_o = rsp.json()
     id = rsp_o["id"]
     self.assertTrue(rsp_o["msg"] == 'Operation Successful', "Got unexpected msg in response {}".format(rsp_o["msg"]))
 if __name__ == '__main__':
